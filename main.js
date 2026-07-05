@@ -870,6 +870,11 @@ Game.registerMod("nvda accessibility", {
 	// This prevents VoiceOver from constantly re-reading unchanged labels
 	setAttributeIfChanged: function(element, attributeName, newValue) {
 		if (!element) return;
+		// Never rewrite the accessible name of the element that has focus:
+		// screen readers re-announce a focused element on every name change,
+		// which turns per-tick countdown labels into once-a-second chatter.
+		// The label catches up on the first tick after focus moves away.
+		if (attributeName === 'aria-label' && element === document.activeElement) return;
 		var currentValue = element.getAttribute(attributeName);
 		if (currentValue !== newValue) {
 			element.setAttribute(attributeName, newValue);
@@ -1357,7 +1362,7 @@ Game.registerMod("nvda accessibility", {
 		}
 		var label = type + ' sugar lump. ' + status + '. You have ' + Beautify(Game.lumps) + ' lumps.';
 		if (typeDesc) label += ' ' + typeDesc + '.';
-		lc.setAttribute('aria-label', label);
+		MOD.setAttributeIfChanged(lc, 'aria-label', label);
 		// Announce when lump becomes ripe (one-time)
 		if (isRipeNow && !MOD.lastLumpRipe) {
 			MOD.announce('Sugar lump is now ripe! ' + type + ' lump ready to harvest.');
@@ -6295,14 +6300,15 @@ Game.registerMod("nvda accessibility", {
 		milkUpg.buy = function(bypass) {
 			var wasOpen = (Game.choiceSelectorOn === milkUpg.id);
 			var panelExists = !!l('a11yMilkSelectorPanel');
+			var result;
 			if (wasOpen || panelExists) {
 				// Closing the selector
-				origBuy.call(this, bypass);
+				result = origBuy.call(this, bypass);
 				var panel = l('a11yMilkSelectorPanel');
 				if (panel) panel.remove();
 			} else {
 				// Opening the selector
-				origBuy.call(this, bypass);
+				result = origBuy.call(this, bypass);
 				var toggleBox = l('toggleBox');
 				if (toggleBox && toggleBox.style.display === 'block') {
 					toggleBox.style.display = 'none';
@@ -6310,6 +6316,7 @@ Game.registerMod("nvda accessibility", {
 					MOD.createMilkSelectorPanel(milkUpg);
 				}
 			}
+			return result;
 		};
 	},
 	createMilkSelectorPanel: function(upgrade) {
@@ -6442,12 +6449,13 @@ Game.registerMod("nvda accessibility", {
 		bgUpg.buy = function(bypass) {
 			var wasOpen = (Game.choiceSelectorOn === bgUpg.id);
 			var panelExists = !!l('a11yBgSelectorPanel');
+			var result;
 			if (wasOpen || panelExists) {
-				origBuy.call(this, bypass);
+				result = origBuy.call(this, bypass);
 				var panel = l('a11yBgSelectorPanel');
 				if (panel) panel.remove();
 			} else {
-				origBuy.call(this, bypass);
+				result = origBuy.call(this, bypass);
 				var toggleBox = l('toggleBox');
 				if (toggleBox && toggleBox.style.display === 'block') {
 					toggleBox.style.display = 'none';
@@ -6455,6 +6463,7 @@ Game.registerMod("nvda accessibility", {
 					MOD.createBackgroundSelectorPanel(bgUpg);
 				}
 			}
+			return result;
 		};
 	},
 	createBackgroundSelectorPanel: function(upgrade) {
@@ -6677,12 +6686,13 @@ Game.registerMod("nvda accessibility", {
 		soundUpg.buy = function(bypass) {
 			var wasOpen = (Game.choiceSelectorOn === soundUpg.id);
 			var panelExists = !!l('a11ySoundSelectorPanel');
+			var result;
 			if (wasOpen || panelExists) {
-				origBuy.call(this, bypass);
+				result = origBuy.call(this, bypass);
 				var panel = l('a11ySoundSelectorPanel');
 				if (panel) panel.remove();
 			} else {
-				origBuy.call(this, bypass);
+				result = origBuy.call(this, bypass);
 				var toggleBox = l('toggleBox');
 				if (toggleBox && toggleBox.style.display === 'block') {
 					toggleBox.style.display = 'none';
@@ -6690,6 +6700,7 @@ Game.registerMod("nvda accessibility", {
 					MOD.createSoundSelectorPanel(soundUpg);
 				}
 			}
+			return result;
 		};
 	},
 	createSoundSelectorPanel: function(upgrade) {
@@ -7374,6 +7385,7 @@ Game.registerMod("nvda accessibility", {
 		var menuButtons = document.querySelectorAll('#prefsButton, #statsButton, #logButton');
 		menuButtons.forEach(function(btn) {
 			MOD.setAttributeIfChanged(btn, 'tabindex', '0');
+			MOD.ensureKeyActivation(btn);
 		});
 		// Update Milk display
 		MOD.updateMilkDisplay();

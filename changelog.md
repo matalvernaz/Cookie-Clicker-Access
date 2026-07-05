@@ -1,5 +1,16 @@
 # Cookie Clicker Access - Changelog
 
+## Version 14.0
+
+### Keyboard activation everywhere
+- Enter and Space now work in focus mode on building level-up buttons, minigame open/close buttons, and the top menu buttons (Options, Statistics, Info). These had labels and tab stops but no key handler, so only browse-mode activation worked. A sweep of all 118 interactive control types the mod exposes found no remaining gaps.
+
+### Less chatter on focused controls
+- Labels with countdowns (sugar lump ripeness, time until affordable) no longer update while you are focused on that element, because every label change gets re-announced. The label refreshes the moment focus moves away. Ripeness and harvest announcements still come through normally.
+
+### Fixes
+- Milk, background, and sound selector overrides now pass the game's buy result back through, so the store no longer treats those purchases as failed.
+
 ## Version 13.9
 
 ### Building mute and unmute (previously a one-way trap)
