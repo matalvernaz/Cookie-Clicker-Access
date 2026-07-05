@@ -881,6 +881,17 @@ Game.registerMod("nvda accessibility", {
 			element.textContent = newText;
 		}
 	},
+	// Enter/Space activation for role=button divs. Focus-mode screen reader
+	// users send real key events, which plain onclick divs ignore. Safe to
+	// call every draw tick: the dataset guard prevents duplicate listeners,
+	// and engine rebuilds recreate elements (clearing the guard) so it re-arms.
+	ensureKeyActivation: function(element) {
+		if (!element || element.dataset.a11yKeys) return;
+		element.dataset.a11yKeys = 'true';
+		element.addEventListener('keydown', function(e) {
+			if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); }
+		});
+	},
 	getBuildingLevelLabel: function(bld) {
 		var level = parseInt(bld.level) || 0;
 		var lumpCost = level + 1;
@@ -7460,6 +7471,7 @@ Game.registerMod("nvda accessibility", {
 						MOD.setAttributeIfChanged(el, 'aria-label', MOD.getBuildingLevelLabel(bld));
 						MOD.setAttributeIfChanged(el, 'role', 'button');
 						MOD.setAttributeIfChanged(el, 'tabindex', '0');
+						MOD.ensureKeyActivation(el);
 					} else if (onclick.includes('minigame') || onclick.includes('Minigame')) {
 						if (minigameUnlocked && minigameName) {
 							// Check if minigame is currently open - multiple ways to detect
@@ -7479,6 +7491,7 @@ Game.registerMod("nvda accessibility", {
 						}
 						MOD.setAttributeIfChanged(el, 'role', 'button');
 						MOD.setAttributeIfChanged(el, 'tabindex', '0');
+						MOD.ensureKeyActivation(el);
 					} else if (onclick.includes('.mute(')) {
 						// Engine markup uses lowercase .mute( — the visible "Mute" text is not in onclick
 						MOD.setAttributeIfChanged(el, 'aria-label', 'Mute ' + bld.name);
@@ -7501,6 +7514,7 @@ Game.registerMod("nvda accessibility", {
 					MOD.setAttributeIfChanged(levelEl, 'aria-label', MOD.getBuildingLevelLabel(bld));
 					MOD.setAttributeIfChanged(levelEl, 'role', 'button');
 					MOD.setAttributeIfChanged(levelEl, 'tabindex', '0');
+					MOD.ensureKeyActivation(levelEl);
 				}
 			}
 			// Also label the productLevel button in the right section (this is the main level upgrade button)
@@ -7509,6 +7523,7 @@ Game.registerMod("nvda accessibility", {
 				MOD.setAttributeIfChanged(productLevelEl, 'aria-label', MOD.getBuildingLevelLabel(bld));
 				MOD.setAttributeIfChanged(productLevelEl, 'role', 'button');
 				MOD.setAttributeIfChanged(productLevelEl, 'tabindex', '0');
+				MOD.ensureKeyActivation(productLevelEl);
 			}
 			// Also label the productMinigameButton in the right section (opens/closes minigame)
 			var productMgBtn = l('productMinigameButton' + bld.id);
@@ -7522,6 +7537,7 @@ Game.registerMod("nvda accessibility", {
 				if (hasMinigame) {
 					MOD.setAttributeIfChanged(productMgBtn, 'role', 'button');
 					MOD.setAttributeIfChanged(productMgBtn, 'tabindex', '0');
+					MOD.ensureKeyActivation(productMgBtn);
 				} else {
 					productMgBtn.setAttribute('aria-hidden', 'true');
 					MOD.setAttributeIfChanged(productMgBtn, 'tabindex', '-1');
@@ -7542,6 +7558,7 @@ Game.registerMod("nvda accessibility", {
 							MOD.setAttributeIfChanged(el, 'aria-label', MOD.getBuildingLevelLabel(bld));
 							MOD.setAttributeIfChanged(el, 'role', 'button');
 							MOD.setAttributeIfChanged(el, 'tabindex', '0');
+							MOD.ensureKeyActivation(el);
 						}
 					}
 				}
