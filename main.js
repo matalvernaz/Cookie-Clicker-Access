@@ -2368,11 +2368,6 @@ Game.registerMod("nvda accessibility", {
 			var bldName = bld.name || bld.dname || 'Building';
 			var mg = bld.minigame;
 			var mgName = mg ? mg.name : '';
-			// Get the building's DOM element via bld.l
-			var bldEl = bld.l;
-			if (bldEl) {
-				MOD.enhanceBuildingElement(bld, bldName, mg, mgName, bldEl);
-			}
 			// Also enhance the product in the store
 			var productEl = l('product' + bld.id);
 			if (productEl) {
@@ -2409,26 +2404,30 @@ Game.registerMod("nvda accessibility", {
 		if (Game.YouCustomizer && Game.YouCustomizer.prompt) {
 			Game.YouCustomizer.prompt = function() {};
 		}
-		// Hide muted building icon strip — purely visual
+		// Muted-buildings strip: the engine shows one icon here per muted building
+		// (click = unmute). It must stay in the accessibility tree — a muted
+		// building's row is display:none, so these icons are the only way back.
 		var buildingsMute = l('buildingsMute');
-		if (buildingsMute) {
-			MOD.setAttributeIfChanged(buildingsMute, 'aria-hidden', 'true');
+		if (buildingsMute && buildingsMute.getAttribute('aria-hidden')) {
+			buildingsMute.removeAttribute('aria-hidden');
+		}
+		for (var mi in Game.ObjectsById) {
+			var mBld = Game.ObjectsById[mi];
+			if (!mBld) continue;
+			var unmuteIcon = l('mutedProduct' + mBld.id);
+			if (!unmuteIcon) continue;
+			MOD.setAttributeIfChanged(unmuteIcon, 'aria-label', 'Unmute ' + (mBld.name || mBld.dname || 'building'));
+			MOD.setAttributeIfChanged(unmuteIcon, 'role', 'button');
+			MOD.setAttributeIfChanged(unmuteIcon, 'tabindex', '0');
+			if (!unmuteIcon.dataset.a11yEnhanced) {
+				unmuteIcon.dataset.a11yEnhanced = 'true';
+				unmuteIcon.addEventListener('keydown', function(e) {
+					if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); }
+				});
+			}
 		}
 		// Also enhance store controls
 		MOD.enhanceStoreControls();
-	},
-	enhanceBuildingElement: function(bld, bldName, mg, mgName, bldEl) {
-		var MOD = this;
-		if (!bldEl) return;
-		// bld.l (bldEl) is the store product button, NOT the building row.
-		// Product button labels are set by enhanceBuildingProduct().
-		// Building row labels are set by labelBuildingRows().
-		// Here we only handle the mute button (referenced directly via bld.muteL).
-		// Mute buttons are purely visual (hide building animation canvas) — hide from screen readers
-		if (bld.muteL) {
-			MOD.setAttributeIfChanged(bld.muteL, 'aria-hidden', 'true');
-			MOD.setAttributeIfChanged(bld.muteL, 'tabindex', '-1');
-		}
 	},
 	enhanceStoreControls: function() {
 		var MOD = this;
@@ -2619,8 +2618,9 @@ Game.registerMod("nvda accessibility", {
 		if (!bld || !mg) return;
 		var bldId = bld.id;
 		var bldName = bld.name || bld.dname || 'Building';
-		// Find the minigame container
-		var mgContainer = l('row' + bldId + 'minigame');
+		// Find the minigame container. Steam builds use row<id>minigame;
+		// the web build mounts minigames into rowSpecial<id>.
+		var mgContainer = l('row' + bldId + 'minigame') || l('rowSpecial' + bldId);
 		if (!mgContainer) return;
 		// Level display element - include building name
 		var levelEl = mgContainer.querySelector('.minigameLevel');
@@ -4198,7 +4198,7 @@ Game.registerMod("nvda accessibility", {
 		if (oldPanel) oldPanel.remove();
 
 		// Fix grimoire container accessibility - remove aria-hidden only
-		var grimContainer = l('row7minigame');
+		var grimContainer = l('row7minigame') || l('rowSpecial7');
 		if (grimContainer) {
 			grimContainer.removeAttribute('aria-hidden');
 			// Fix parent elements that might have aria-hidden
@@ -7479,10 +7479,20 @@ Game.registerMod("nvda accessibility", {
 						}
 						MOD.setAttributeIfChanged(el, 'role', 'button');
 						MOD.setAttributeIfChanged(el, 'tabindex', '0');
-					} else if (onclick.includes('Mute')) {
+					} else if (onclick.includes('.mute(')) {
+						// Engine markup uses lowercase .mute( — the visible "Mute" text is not in onclick
 						MOD.setAttributeIfChanged(el, 'aria-label', 'Mute ' + bld.name);
 						MOD.setAttributeIfChanged(el, 'role', 'button');
 						MOD.setAttributeIfChanged(el, 'tabindex', '0');
+						if (!el.dataset.a11yEnhanced) {
+							el.dataset.a11yEnhanced = 'true';
+							el.addEventListener('keydown', function(e) {
+								if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.click(); }
+							});
+							el.addEventListener('click', (function(name) { return function() {
+								MOD.announce('Muted ' + name + '. Unmute button available in the Muted section above the buildings.');
+							}; })(bld.name));
+						}
 					}
 				});
 				// Also check for .level elements in the row

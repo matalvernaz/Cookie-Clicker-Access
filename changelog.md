@@ -1,5 +1,16 @@
 # Cookie Clicker Access - Changelog
 
+## Version 13.9
+
+### Building mute and unmute (previously a one-way trap)
+- Building Mute buttons are now labeled and keyboard accessible (e.g. "Mute Grandma"). A code path matched the wrong case and never labeled them, so muting was only possible by accident.
+- Muting a building now announces what happened and where to find the Unmute control.
+- The muted-buildings strip is no longer hidden from screen readers: each muted building exposes an "Unmute <building>" button there, reachable with Tab, and it leaves the tab order automatically when the building is unmuted. Previously the only way to unmute was disabling the mod.
+- Removed dead code that targeted a mute element that does not exist in current game builds.
+
+### Web version
+- Minigame container lookups now fall back to the web build's rowSpecial ids (Steam uses row<id>minigame). Restores the minigame header enhancements on the browser/Tampermonkey version.
+
 ## Version 13.8
 
 - Simplified milk display under big cookie to show just rank and type (detailed info already in stats menu)
